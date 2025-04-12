@@ -15,6 +15,8 @@ expected_output_format = """
                         ],
                         "notes": "Optional - explanation of changes, assumptions, or warnings."
                         }
+
+                        The paths should start with /
                         """
 
 

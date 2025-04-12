@@ -1,20 +1,24 @@
 from llm import generate
-from speech_to_text import SpeechToText
+from speech_to_text import wav_to_text
 from prompt import *
-from clean_prompt import get_cleaned_command_variations
+from record import pygamer
 from services.executor import execute_output
 import json
+import os
 
 
 def main() -> None:
-    stt = SpeechToText()
-    stt.transcribe()
+    # stt = SpeechToText()
+    # stt.transcribe()
     
-    response = generate(file_editing_prompt(get_cleaned_command_variations(stt.get_prompt())["first"]))
-    # st = response.find("{")
-    # end = response.rfind("}")
+    save_file = pygamer()
+    response = generate(file_editing_prompt(wav_to_text(save_file)))
+    if os.path.exists(save_file):
+        os.remove(save_file)
+    st = response.find("{")
+    end = response.rfind("}")
     print(response)
-    # execute_output(json.loads(response[st:end+1]))
+    execute_output(json.loads(response[st:end+1]))
 
 
 if __name__ == "__main__":

@@ -106,16 +106,14 @@ def test_six():
 
 def test_seven():
     output = {
-        "files": [
-            {
-                "path": "/project/main.py",
-                "content": "__future__ import division\n\ntmp = tmp.replace(' ', '')\n\ndef draw_board(board): ...",
-                "notes": "Fixed imports and removed duplicate imports"
-            }
-        ],
-        "commands": ["python3 main.py"],
-        "notes": "I made the following changes:\n1. Fixed incorrect imports\n2. Removed duplicate import statement\n3. Ensured all functions are properly defined"
-    }
+  "files": [
+    {
+      "path": "/tic_tac_toe.py",
+      "content": "import random\n\n\ndef print_board(board):\n    for row in board:\n        print(' | '.join(row))\n        print('-' * 9)\n\n\ndef get_valid_move(board, player symbol) -> tuple[int, int]:\n    valid_moves = [(i, j) for i in range(3) for j in range(3) if board[i][j] == ' ']\n    random.shuffle(valid_moves)\n    return valid_moves[0]\n\n\ndef check_winner(board):\n    # Check rows\n    for row in board:\n        if all(cell == 'X' for cell in row) or all(cell == 'O' for cell in row):\n            return 'X' if all(cell == 'X' else 'O')\n    # Check columns\n    for col in range(3): \n        if all(board[row][col] == 'X' for row in range(3)) or all(board[row][col] == 'O' for row in range(3)):\n            return 'X' if all(cell == 'X' else 'O')\n    # Check diagonals\n    if (board[0][0] == board[1][1] == board[2][2]) or (board[0][2] == board[1][1] == board[2][0]):\n        return 'X' if all(cell == 'X' else 'O')\n    # Check for tie\n    if all(board[i][j] != ' ' for i in range(3) for j in range(3)):\n        return None\n    return None\n\n\nif __name__ == '__main__':\n    board = [[' ', ' ', ' '],\n             [' ', ' ', ' '],\n             [' ', ' ', ' ']]\n    game_over = False\n    current_player = 'X'\n\n    print(\"Welcome to Tic Tac Toe!\\nYou are X and O takes turns, starting with X\")\n    while True:\n        if not game_over:\n            print_board(board)\n            move = input(f\"Player {current_player}, enter your move (row column): \").split()\n            i, j = int(move[0]), int(move[1])\n\n            if board[i][j] != ' ' or current_player not in ('X', 'O'):\n                print \"Invalid move! Try again\"\n                continue\n            board[i][j] = current_player\n            game_over = check_winner(board)\n            if game_over:\n                winner = check_winner(board)\n                if winner:\n                    print_board(board)\n                    if winner == 'X':\n                        print(f\"Player X wins!\\nGame over!\\nYou lose :(\")\n                    else:\n                        print(f\"Player O wins!\\nGame over!\\nYou win!!!\")\n                    break\n                else:\n                    print_board(board)\n                    print(f\"It's a tie! All spots filled.\\nGame over!\\nEnjoy the game!!!\")\n                    break\n            current_player = 'O' if current_player == 'X' else 'X'\n\n"}
+  ],
+  "commands": [],
+  "notes": "This is a simple Tic Tac Toe game implemented in Python with command line interface. The game includes:\n- Board display\n- Player input validation\n- Win/lose detection\n- Tie detection\n- Game reset\nThe game alternates between players X and O, starting with X.\nWhen the board is full (all spots filled) it results in a tie."
+}
 
     results = execute_output(output)
 

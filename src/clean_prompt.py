@@ -1,5 +1,6 @@
 # Take in a speech-to-text instruction from the user and generate 3 possible instructions (to account for translation errors)
 # Ask user to pick the closest instruction/reroll - optional text edit
+# Doesn't seem necessary
 
 from typing import Dict
 from llm import generate
