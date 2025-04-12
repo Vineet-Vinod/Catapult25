@@ -1,3 +1,5 @@
+# Speech to text module using Vosk
+
 from queue import Queue
 from vosk import Model, KaldiRecognizer
 from typing import Any
@@ -35,11 +37,14 @@ class SpeechToText:
                 while True:
                     data = SpeechToText.queue.get()
                     if SpeechToText.__REC.AcceptWaveform(data):
-                        translation = json.loads(SpeechToText.__REC.Result())
-                        prompt += f"{translation["text"]} "
-                        if "terminate" in prompt:
-                            SpeechToText.__PROMPT = prompt
-                            return
+                        try:
+                            translation = json.loads(SpeechToText.__REC.Result())
+                            prompt += f"{translation["text"]} "
+                            if "terminate" in prompt:
+                                SpeechToText.__PROMPT = prompt
+                                return
+                        except:
+                            raise Exception(f"Error in converting model output to JSON!")
                     
         except Exception as e:
             print("Error:", str(e))
