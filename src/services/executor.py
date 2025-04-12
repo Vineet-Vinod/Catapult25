@@ -28,11 +28,13 @@ def update_file(path, content):
 # for example: '/src/services/executor.py'
 # or don't do that and get bad output I don't care :)
 def execute_output(output_json: dict) -> None:
+    # print(output_json)
     results = []
+    for update_cmd in output_json["files"]:
+        print(update_cmd["path"])
+        update_file(update_cmd["path"], update_cmd["content"])
     for cmd in output_json["commands"]:
         results.append(run_shell_cmd(cmd))
-    for update_cmd in output_json["files"]:
-        update_file(update_cmd["path"], update_cmd["content"])
     return results
 
 

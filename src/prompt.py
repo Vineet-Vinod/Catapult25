@@ -5,11 +5,11 @@ expected_output_format = """
                         "commands": ["<shell command>", "..."],
                         "files": [
                             {
-                            "path": "relative/path/to/file.py",
+                            "path": "/relative/path/to/file.py",
                             "content": "<full new file content here>"
                             },
                             {
-                            "path": "another/file.txt",
+                            "path": "/another/file.txt",
                             "content": "..."
                             }
                         ],
@@ -18,7 +18,7 @@ expected_output_format = """
                         """
 
 
-file_creation_prompt = f"""
+file_creation_prompt = lambda user_input: f"""
                         You are a code generation assistant. The user is working on a project and needs you to create one or more new files based on their description.
 
                         Return a JSON object with:
@@ -28,13 +28,13 @@ file_creation_prompt = f"""
 
                         Respond ONLY with JSON.
 
-                        The expected output format is {expected_output_format}
+                        The expected output format is {expected_output_format.strip()}
 
-                        User request: {{user_input}}
+                        User request: {user_input}
                         """
 
 
-file_editing_prompt = f"""
+file_editing_prompt = lambda user_input: f"""
                         You are a file editor assistant. The user wants to modify existing files in their project.
 
                         You must return a JSON object with:
@@ -44,13 +44,13 @@ file_editing_prompt = f"""
 
                         You must include the full content of each modified file.
 
-                        The expected output format is {expected_output_format}
+                        The expected output format is {expected_output_format.strip()}
 
-                        Context from user: {{user_input}}
+                        Context from user: {user_input}
                         """
 
 
-debugging_prompt = f"""
+debugging_prompt = lambda user_input: f"""
                     You are a debugging assistant. The user is having issues in one or more files. You are given:
                     - a description of the issue
                     - the file contents (optional)
@@ -60,13 +60,13 @@ debugging_prompt = f"""
                     - `commands`: shell commands to run if relevant (e.g., reinstall, test)
                     - `notes`: what caused the issue, how it was fixed
 
-                    The expected output format is {expected_output_format}
+                    The expected output format is {expected_output_format.strip()}
 
-                    Description: {{user_input}}
+                    Description: {user_input}
                     """
 
 
-execution_prompt = f"""
+execution_prompt = lambda user_input: f"""
                     The user wants to perform a task that involves running one or more shell commands.
 
                     You should:
@@ -76,13 +76,13 @@ execution_prompt = f"""
 
                     Respond with JSON only.
 
-                    The expected output format is {expected_output_format}
+                    The expected output format is {expected_output_format.strip()}
 
-                    Task: {{user_input}}
+                    Task: {user_input}
                     """
 
 
-dependancy_management_prompt = f"""
+dependancy_management_prompt = lambda user_input: f"""
                                 The user needs to install, remove, or update project dependencies.
 
                                 Return:
@@ -90,13 +90,13 @@ dependancy_management_prompt = f"""
                                 - File changes if needed (like `requirements.txt`, `package.json`)
                                 - A brief note explaining choices
 
-                                The expected output format is {expected_output_format}
+                                The expected output format is {expected_output_format.strip()}
 
-                                Task: {{user_input}}
+                                Task: {user_input}
                                 """
 
 
-refactoring_prompt = f"""
+refactoring_prompt = lambda user_input: f"""
                     The user wants to improve code quality, readability, or structure without changing its functionality.
 
                     Return:
@@ -104,7 +104,7 @@ refactoring_prompt = f"""
                     - Optional commands (like running formatters)
                     - Notes explaining what was improved and why
 
-                    The expected output format is {expected_output_format}
+                    The expected output format is {expected_output_format.strip()}
 
-                    Request: {{user_input}}
+                    Request: {user_input}
                     """

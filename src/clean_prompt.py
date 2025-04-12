@@ -40,6 +40,8 @@ def get_cleaned_command_variations(original_command: str) -> Dict[str, str]:
 
 def parse_json_response(response: str) -> Dict[str, str]:
     try:
-        return json.loads(response)
+        st = response.find("{")
+        end = response.rfind("}")
+        return json.loads(response[st:end+1])
     except json.JSONDecodeError as e:
         raise ValueError(f"Failed to parse LLM response as JSON: {e}\n\nRaw response:\n{response}")

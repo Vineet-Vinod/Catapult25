@@ -1,2 +1,5 @@
 src/venv
 src/model*
+src/__pycache__
+src/services/__pycache__
+tests/__pycache__

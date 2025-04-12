@@ -4,7 +4,6 @@ from queue import Queue
 from vosk import Model, KaldiRecognizer
 from typing import Any
 import sounddevice as sd
-import vosk
 import json
 
 
