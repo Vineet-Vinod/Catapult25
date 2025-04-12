@@ -79,21 +79,21 @@ def test_five():
         "commands": [],
         "files": [
             {
-                "path": "/red/orange/yellow/green/blue/purple/rainbow.txt",
+                "path": "/.junk/red/orange/yellow/green/blue/purple/rainbow.txt",
                 "content": creed,
             }
         ],
     }
     results = execute_output(output)
 
-    assert os.path.exists("red/orange/yellow/green/blue/purple/rainbow.txt")
+    assert os.path.exists(".junk/red/orange/yellow/green/blue/purple/rainbow.txt")
 
 
 def test_six():
     output = {
         "commands": [
-            "cat red/orange/yellow/green/blue/purple/rainbow.txt",
-            "rm red/orange/yellow/green/blue/purple/rainbow.txt",
+            "cat .junk/red/orange/yellow/green/blue/purple/rainbow.txt",
+            "rm -r .junk/red/orange/yellow/green/blue/purple/rainbow.txt",
         ],
         "files": [],
     }
@@ -101,7 +101,7 @@ def test_six():
 
     assert len(results) == 2
     assert results[0].stdout == creed
-    assert not os.path.exists("red/orange/yellow/green/blue/purple/rainbow.txt")
+    assert not os.path.exists(".junk/red/orange/yellow/green/blue/purple/rainbow.txt")
 
 
 def test_executor():

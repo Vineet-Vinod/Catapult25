@@ -23,6 +23,10 @@ def update_file(path, content):
         print(f"(update_file) failed to update {path}: {e}")
 
 
+# handles json output from llm according to structure in src/prompt.py
+# for file paths in { "files": { "path": ... } } please prefix filepath with '/' and specify relative to rootdir
+# for example: '/src/services/executor.py'
+# or don't do that and get bad output I don't care :)
 def execute_output(output_json: dict) -> None:
     results = []
     for cmd in output_json["commands"]:
