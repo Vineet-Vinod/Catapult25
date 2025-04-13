@@ -1,3 +1,5 @@
+# Not needed anymore - Frontend handles creating files on the user's machine
+
 import subprocess
 import os
 
