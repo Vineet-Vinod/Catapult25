@@ -12,14 +12,14 @@ audio_data = []
 save_file = "temp_voice.wav"
 
 
-def start_recording():
+def start_recording() -> None:
     global is_recording, audio_data
     is_recording = True
     audio_data = []
     threading.Thread(target=record).start()
 
 
-def stop_recording():
+def stop_recording() -> str:
     global is_recording
     is_recording = False
     filename = save_file
@@ -27,7 +27,7 @@ def stop_recording():
     return filename
 
 
-def record():
+def record() -> None:
     global audio_data
     with sd.InputStream(samplerate=sample_rate, channels=channels, dtype='int16') as stream:
         while is_recording:
@@ -35,7 +35,7 @@ def record():
             audio_data.append(data.copy())
 
 
-def save_wav(filename):
+def save_wav(filename: str) -> None:
     full_data = np.concatenate(audio_data)
     with wave.open(filename, 'wb') as wf:
         wf.setnchannels(channels)
@@ -44,8 +44,8 @@ def save_wav(filename):
         wf.writeframes(full_data.tobytes())
 
 
-# Pygame UI
-def pygamer():
+# Temporary Pygame UI
+def pygamer() -> str:
     pygame.init()
     screen = pygame.display.set_mode((400, 200))
     pygame.display.set_caption("Voice Recorder (sounddevice)")

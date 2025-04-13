@@ -1,10 +1,9 @@
-# LLM interface functions
+# LLM API calls
 
 import requests
 
 
 def generate(input: str) -> str:
-    print(input)
     response = requests.post(
         "http://10.186.92.201:11434/api/generate",
         json={
@@ -15,6 +14,7 @@ def generate(input: str) -> str:
     )
 
     return (response.json()["response"])
+
 
 if __name__ == "__main__":
     print(generate("What is the distance of the sun from the earth"))
