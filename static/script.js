@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // TODO: Handle successful backend response
                     // e.g., Update file tree, hide overlay, etc.
                     generatingOverlay.classList.add('hidden');
-                    // Example: populateFileTree(data.updatedFiles); // Assuming backend sends updated file list
+                    populateFileTree(data.updatedFiles); // Assuming backend sends updated file list
                 })
                 .catch(error => {
                     console.error('Error sending audio to backend:', error);

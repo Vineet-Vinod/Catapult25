@@ -1,3 +1,5 @@
+# Not needed anymore - Frontend handles recording logic
+
 import sounddevice as sd
 import numpy as np
 import wave
