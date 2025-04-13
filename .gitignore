@@ -4,3 +4,4 @@ tests/__pycache__
 src/remote.py
 llama_tests
 src/recording.wav
+static/my_script.js

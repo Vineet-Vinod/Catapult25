@@ -16,6 +16,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileEditor = document.getElementById('file-editor');
     const recordArea = document.getElementById('record-area'); // Added for hiding later
     const bottomBar = document.getElementById('bottom-bar');   // Added for showing later
+    const saveFileButton = document.getElementById('save-file-button');
+
+    let openedFilesMap = new Map(); // map filePath to File object
+    let currentOpenFile = null;
+    let isSaving = false;
 
     // --- Event Listener for Open Folder Button ---
     if (openFolderButton && folderInput) {
@@ -31,6 +36,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = event.target.files;
         if (files.length > 0) {
             console.log('Folder selected:', files);
+
+            // clear previous state and map
+            openedFilesMap = new Map();
+            currentOpenFile = null;
+            saveFileButton.disabled = true;
+            fileEditor.value = ''; // clear out the editor
+            currentFileDisplay.textContent = "No file open";
+
+            fileEditor.disabled = true;
+            editorArea.classList.add('hidden'); // hide the editor
+            // recordArea.classList.remove('hidden'); // show the record button (maybe)
+            bottomBar.classList.add('hidden'); // hide bottom bar
+
+            Array.from(files).forEach(file => {
+                const path = file.webkitRelativePath || file.name;
+                if (path) {
+                    openedFilesMap.set(path, file);
+                } else {
+                    console.warn("File object missing path information for", file);
+                }
+            });
+            console.log("Populated openFilesMap:", openedFilesMap.size, "entries");
 
             // --- UI Updates ---
             homeScreen.classList.remove('active');
@@ -57,10 +84,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } else {
             // Reset if no folder selected (e.g., user cancelled)
+            openedFilesMap = new Map();
+            currentOpenFile = null;
+            saveFileButton.disabled = true;
+
             folderNameDisplay.textContent = "No folder selected";
             fileTreeElement.innerHTML = ''; // Clear tree
             recordButton.disabled = true;
             if(recordHint) recordHint.style.display = 'block';
+            
+            /*
+            homeScreen.classList.add('active'); // show home screen again
+            mainIdeView.classList.remove('active'); // hide IDE view
+            fileEditor.value = ''; // clear editor
+            currentFileDisplay.textContent = 'no file open';
+            fileEditor.disabled = true;
+            editorArea.classList.add('hidden');
+            recordArea.classList.remove('hidden'); // ensure record area visibility matches initial state
+            bottomBar.classList.add('hidden');
+            */
         }
     });
 
@@ -72,78 +114,94 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Helper Function to Build Intermediate Tree Object ---
-    function buildTreeObject(files) {
+    function buildTreeObject(files) { // Receives FileList
         const tree = {};
-        // Convert FileList to array and sort by path for potentially better processing order
-        const sortedFiles = Array.from(files).sort((a, b) => a.webkitRelativePath.localeCompare(b.webkitRelativePath));
+        // Sort paths from the map keys instead of the FileList directly
+        const sortedPaths = Array.from(openedFilesMap.keys()).sort((a, b) => a.localeCompare(b));
 
-        sortedFiles.forEach(file => {
-            // Use a fallback for path if webkitRelativePath isn't available (though it's needed for directories)
-            const path = file.webkitRelativePath || file.name;
+        let rootFolderName = null; // Determine root folder name based on paths
+
+        sortedPaths.forEach(path => {
+            // const path = file.webkitRelativePath || file.name; // Path comes from sortedPaths
+            // if (!path) return; // Already filtered by map population
+
             const parts = path.split('/');
+                // --- MODIFIED: Determine root folder name more reliably ---
+            if (rootFolderName === null && parts.length > 1) {
+                rootFolderName = parts[0]; // Capture the first part as the root
+            } else if (rootFolderName === null && parts.length === 1) {
+                    // Handle case where only files are in the root
+                    rootFolderName = ""; // Indicate root level contains files/folders directly
+            }
+
+
             let currentLevel = tree;
 
             for (let i = 0; i < parts.length; i++) {
                 const part = parts[i];
-                // If it's the last part, it's the file/item itself
+
                 if (i === parts.length - 1) {
-                    // Check if it's likely a file (contains a dot or doesn't exist yet)
-                    // This check is imperfect for files without extensions in subdirs
-                    // A more robust check might involve seeing if any other path starts with this path + '/'
-                    const isLikelyFile = part.includes('.') || !currentLevel[part];
-                    if (isLikelyFile && !currentLevel[part]) { // Avoid overwriting potential folders
-                         currentLevel[part] = {
-                            type: 'file',
-                            name: part,
-                            fullPath: path // Store full path for reference
-                         };
-                    } else if (!currentLevel[part]) { // If it doesn't exist, assume folder
-                         currentLevel[part] = { type: 'folder', name: part, children: {} };
+                    // --- MODIFIED: Rely on openedFilesMap existence for file type ---
+                    // If the full path exists in our map, it's definitively a file we received.
+                        if (openedFilesMap.has(path)) {
+                            // Ensure we don't overwrite an existing folder structure accidentally
+                            if (!currentLevel[part] || currentLevel[part].type !== 'folder') {
+                                currentLevel[part] = {
+                                type: 'file',
+                                name: part,
+                                fullPath: path
+                            };
+                            } else {
+                                // This case (path is file, but tree has folder) should be rare with sorted input
+                                console.warn(`Conflict: Path ${path} is a file, but tree already has a folder named ${part}. Prioritizing folder structure.`);
+                            }
+                        } else if (!currentLevel[part]) {
+                            // If it's not in the map and not in the tree, assume it's a folder
+                            // (Could be an empty folder implicitly defined by other paths)
+                        currentLevel[part] = { type: 'folder', name: part, children: {} };
                     }
-                    // If it exists as a folder and we think it's a file now, something is odd, log it.
-                    else if (currentLevel[part].type === 'folder' && isLikelyFile) {
-                         console.warn(`Conflict: ${part} detected as both folder and file.`);
-                    }
+                    // If it already exists (as file or folder), leave it.
 
                 } else {
-                    // It's a directory part
+                    // --- MODIFIED: Directory part handling ---
                     if (!currentLevel[part]) {
                         currentLevel[part] = { type: 'folder', name: part, children: {} };
                     } else if (currentLevel[part].type === 'file') {
-                        // This case shouldn't happen often with sorted input if a file exists
-                        // where a directory name should be. Handle potential conflict.
-                        console.warn(`Path conflict: ${part} was expected to be a folder but seems to be a file.`);
-                        // You might decide to convert it to a folder here, or log and skip.
-                        // For simplicity, let's assume it's a folder if needed for structure.
-                        if (!currentLevel[part].children) {
-                             currentLevel[part].children = {};
-                             currentLevel[part].type = 'folder';
-                        }
+                        // If we encounter a path part that was previously assumed to be a file
+                        console.warn(`Path conflict: ${part} was treated as a file but is needed as a folder for path ${path}. Converting to folder.`);
+                        currentLevel[part] = { type: 'folder', name: part, children: {} }; // Convert to folder
                     }
                     // If it's already a folder, just move down
+                        // Check if children exist before trying to access them
+                        if (!currentLevel[part].children) {
+                        currentLevel[part].children = {}; // Ensure children object exists
+                        }
                     currentLevel = currentLevel[part].children;
                 }
             }
         });
-        // Remove the top-level folder name from the tree if desired
-        const rootFolderName = files[0]?.webkitRelativePath?.split('/')[0];
-        if (rootFolderName && tree[rootFolderName] && tree[rootFolderName].type === 'folder') {
+
+        // --- MODIFIED: Root folder extraction logic ---
+        // If a root folder name was identified AND it exists in the tree as a folder
+        if (rootFolderName !== null && rootFolderName !== "" && tree[rootFolderName]?.type === 'folder') {
             return tree[rootFolderName].children; // Start rendering from inside the main selected folder
         }
-
-        return tree; // Return the whole tree if root extraction fails
+        // If rootFolderName is "" (files at root) or extraction failed, return the whole tree
+        return tree;
     }
-
 
     // --- Helper Function to Render Tree Object to HTML ---
     function renderTree(node, parentElement, depth) {
-        // Get keys and sort them (folders first, then alphabetically)
         const keys = Object.keys(node).sort((a, b) => {
             const nodeA = node[a];
             const nodeB = node[b];
+
+            // Sort folders before files
             if (nodeA.type === 'folder' && nodeB.type === 'file') return -1;
             if (nodeA.type === 'file' && nodeB.type === 'folder') return 1;
-            return a.localeCompare(b); // Alphabetical sort otherwise
+
+            // Otherwise, sort alphabetically by key (name)
+            return a.localeCompare(b);
         });
 
         keys.forEach(key => {
@@ -152,16 +210,22 @@ document.addEventListener('DOMContentLoaded', function() {
             li.style.paddingLeft = `${depth * 15}px`; // Indentation based on depth
 
             if (entry.type === 'folder') {
-                li.innerHTML = `<span class="icon">📁</span>${entry.name}`;
-                li.classList.add('folder-item'); // Add class for potential styling/logic
+                // Use spans for easier targeting of icon and name
+                li.innerHTML = `<span class="icon toggle-icon">📁</span><span class="folder-name">${entry.name}</span>`;
+                li.classList.add('folder-item');
                 parentElement.appendChild(li);
-                // Recursively render children if they exist
+
+                // Recursively render children *into a new UL* if they exist
                 if (entry.children && Object.keys(entry.children).length > 0) {
-                    renderTree(entry.children, parentElement, depth + 1);
+                    const ul = document.createElement('ul');
+                    ul.classList.add('nested'); // Class for styling/toggling
+                    ul.style.display = 'none';  // Start collapsed
+                    parentElement.appendChild(ul); // Append the UL *after* the folder's LI
+                    renderTree(entry.children, ul, depth + 1); // Render children into the new UL
                 }
             } else { // It's a file
                 li.innerHTML = `<span class="icon">📄</span>${entry.name}`;
-                li.classList.add('file-item'); // Add class for potential styling/logic
+                li.classList.add('file-item');
                 li.dataset.filePath = entry.fullPath; // Store the full path for opening later
                 parentElement.appendChild(li);
             }
@@ -173,52 +237,186 @@ document.addEventListener('DOMContentLoaded', function() {
         const fileItems = fileTreeElement.querySelectorAll('.file-item');
         fileItems.forEach(item => {
             item.addEventListener('click', (e) => {
-                // Prevent clicks on folders from triggering this if propagation isn't stopped
                 if (!item.classList.contains('file-item')) return;
 
-                // Remove active class from previously selected file
                 const currentlyActive = fileTreeElement.querySelector('.active-file');
                 if (currentlyActive) {
                     currentlyActive.classList.remove('active-file');
                 }
-
-                // Add active class to clicked file
                 item.classList.add('active-file');
 
                 const filePath = item.dataset.filePath;
                 console.log("Clicked file:", filePath);
 
-                 // --- TODO: Implement File Opening/Editing ---
-                 // 1. Show editor area if hidden (might happen after first record)
-                 if(editorArea.classList.contains('hidden')) {
-                     editorArea.classList.remove('hidden');
-                     // Optionally hide the initial large record button area now
-                     recordArea.classList.add('hidden');
-                     // Optionally show bottom bar controls now
-                     bottomBar.classList.remove('hidden');
-                 }
+    
+                // retrieve the actual File object using the stored map
+                const fileObject = openedFilesMap.get(filePath);
 
-                 // 2. Update the "current file" display
-                 currentFileDisplay.textContent = filePath.split('/').pop(); // Show just filename
+                if (!fileObject) {
+                    console.error(`File object not found in map for path: ${filePath}`);
+                    fileEditor.value = `Error: Could not find file data for ${filePath}.`;
+                    currentFileDisplay.textContent = 'Error Loading File';
+                    fileEditor.disabled = true;
+                    // Ensure editor UI is visible even on error
+                    editorArea.classList.remove('hidden');
+                    recordArea.classList.add('hidden');
+                    bottomBar.classList.remove('hidden');
+                    return;
+                }
 
-                 // 3. Fetch file content (Placeholder - requires JS access to local files or backend)
-                 //    For now, we'll just put a placeholder in the editor
-                 fileEditor.value = `// Content for ${filePath} would be loaded here.\n// Actual file reading requires more advanced APIs (like File System Access API)\n// or interaction with a backend/server process.`;
-                 fileEditor.disabled = false; // Ensure editor is enabled
+                // 2. Show editor area and update display (if first file opened)
+                if (editorArea.classList.contains('hidden')) {
+                    editorArea.classList.remove('hidden');
+                    recordArea.classList.add('hidden'); // Hide initial large record button area
+                    bottomBar.classList.remove('hidden'); // Show bottom bar controls
+                }
+                currentOpenFile = filePath;
+                currentFileDisplay.textContent = filePath.split('/').pop(); // Show just filename
+                fileEditor.value = "Loading..."; // Placeholder
+                fileEditor.disabled = true; // disable while loading
+                saveFileButton.disabled = true; // disable save while
 
+                // 3. Read file content asynchronously using File.text()
+                fileObject.text()
+                    .then(content => {
+                        fileEditor.value = content; // Set content
+                        fileEditor.disabled = false; // Enable editor
+                        saveFileButton.disabled = false; // Enable save button
+
+                        console.log(`Successfully loaded content for ${filePath}`);
+
+                        // Optional: focus and move cursor to start
+                        fileEditor.focus();
+                        fileEditor.setSelectionRange(0, 0);
+                    })
+                    .catch(err => {
+                        console.error(`Error reading file ${filePath}:`, err);
+                        fileEditor.value = `Error loading file content: ${err.message}`;
+                        currentFileDisplay.textContent = 'Error Reading File';
+                        fileEditor.disabled = true; // Keep disabled on error
+                    });
             });
         });
 
-         // Optional: Add listeners for folders if you want expand/collapse later
-         const folderItems = fileTreeElement.querySelectorAll('.folder-item');
-         folderItems.forEach(item => {
+        // --- MODIFIED: Add listeners for folders (basic expand/collapse) ---
+        const folderItems = fileTreeElement.querySelectorAll('.folder-item');
+        folderItems.forEach(item => {
             item.addEventListener('click', (e) => {
-                console.log("Clicked folder:", item.textContent.trim());
-                // Implement expand/collapse logic here if desired
+                    // Prevent file read if click was on icon/name inside folder item
+                    if (e.target.closest('.file-item')) return;
+
+                    console.log("Clicked folder:", item.querySelector('.folder-name')?.textContent || item.textContent.trim());
+
+                    // Find the next sibling UL element
+                    const nestedList = item.nextElementSibling;
+                    if (nestedList && nestedList.tagName === 'UL') {
+                        // Toggle display
+                        const isVisible = nestedList.style.display === 'block';
+                        nestedList.style.display = isVisible ? 'none' : 'block';
+                        // Toggle icon (optional)
+                        const icon = item.querySelector('.toggle-icon');
+                        if(icon) icon.textContent = isVisible ? '📁' : '📂';
+                    }
+                    // Prevent the event from bubbling up further if needed
+                    e.stopPropagation();
             });
-         });
+        });
+    } // end of addFileClickListeners
+
+    // --- File Editing/Saving ---
+    // Add unsaved indicator on input
+    fileEditor.addEventListener('input', (e) => {
+        if (currentOpenFile && !isSaving) { // Only mark as dirty if a file is open and not currently saving
+            const currentFileNameDisplay = currentFileDisplay.textContent;
+            if (!currentFileNameDisplay.endsWith('*')) {
+                currentFileDisplay.textContent += '*';
+            }
+            saveFileButton.disabled = false; // Ensure save is enabled when changes are made
+        }
+    });
+
+    // Save on Button Click
+    if (saveFileButton) {
+        saveFileButton.addEventListener('click', saveCurrentFile);
     }
 
+    // Save on Ctrl+S / Cmd+S
+    fileEditor.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault(); // Prevent browser's default save action
+            if (!saveFileButton.disabled && currentOpenFile) { // Only save if enabled and file open
+                saveCurrentFile();
+            } else {
+                console.log("Save shortcut pressed, but no file open or save button disabled.");
+            }
+        }
+    });
+
+    // --- Function to Save the Currently Open File ---
+    function saveCurrentFile() {
+        if (!currentOpenFile || isSaving || fileEditor.disabled) {
+            console.warn("Save conditions not met:", { currentOpenFile, isSaving, disabled: fileEditor.disabled });
+            return; // Don't save if no file is open, already saving, or editor disabled
+        }
+
+        isSaving = true;
+        saveFileButton.disabled = true; // Disable button during save
+        const originalButtonText = saveFileButton.innerHTML;
+        saveFileButton.innerHTML = '<span class="icon">⏳</span> Saving...'; // Indicate saving
+
+        const contentToSave = fileEditor.value;
+        const filePathToSave = currentOpenFile; // Use the tracked path
+
+        console.log(`Attempting to save: ${filePathToSave}`);
+
+        // --- Send data to backend ---
+        fetch('/save_file', { // <<< YOUR BACKEND ENDPOINT HERE
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                filePath: filePathToSave, // Send relative path
+                content: contentToSave
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                 // Try to get error details from backend response
+                 return response.text().then(text => {
+                     throw new Error(`Server error: ${response.status} - ${text || 'No details'}`);
+                 });
+            }
+            return response.json(); // Expect { success: true } or similar from backend
+        })
+        .then(data => {
+            if (data.success) {
+                console.log("File saved successfully:", filePathToSave);
+                // Remove the '*' indicator from the display name
+                if (currentFileDisplay.textContent.endsWith('*')) {
+                    currentFileDisplay.textContent = currentFileDisplay.textContent.slice(0, -1);
+                }
+                // Optional: Show a brief success message/notification
+            } else {
+                 // Backend indicated failure
+                 throw new Error(data.error || "Backend reported save failure.");
+            }
+        })
+        .catch(error => {
+            console.error('Error saving file:', error);
+            alert(`Failed to save file "${filePathToSave}".\nError: ${error.message}\n\nPlease check console and backend logs.`);
+            // Do not re-enable button immediately on error? Or re-enable so user can retry?
+             saveFileButton.disabled = false; // Re-enable on error for retry
+        })
+        .finally(() => {
+            // Runs after .then() or .catch()
+            isSaving = false;
+            // Restore button text and enable if not already re-enabled by error handler
+            saveFileButton.innerHTML = originalButtonText;
+            // Only re-enable if no "*" exists (meaning save was successful or no changes made since error)
+            saveFileButton.disabled = currentFileDisplay.textContent.endsWith('*');
+        });
+    }
 
     // --- Microphone Recording Variables ---
     let mediaRecorder; // Will hold the MediaRecorder instance
@@ -463,4 +661,4 @@ document.addEventListener('DOMContentLoaded', function() {
      });
 
 
-}); // End DOMContentLoaded
+});
