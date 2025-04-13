@@ -71,6 +71,18 @@
             </button>
         </div>
     </div>
+    <div id="modal-overlay" class="hidden"></div>
+    <div id="run-command-modal" class="modal hidden">
+        <button id="modal-close-button" class="modal-close">×</button>
+        <h3>Run Command</h3>
+        <p>To run your project, open your terminal, navigate to the correct folder, and execute the following command:</p>
+        <div class="command-box">
+            <pre><code id="command-display"></code></pre>
+        </div>
+        <button id="modal-copy-button">
+            <span class="icon">📋</span> Copy Command
+        </button>
+    </div>
 
     <!-- Link to your JavaScript file (optional for now) -->
     <script src="../static/script.js" defer></script>
