@@ -493,6 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
+                    console.log(response.llm_output);
                     return response.json(); // Or response.text() depending on backend
                 })
                 .then(data => {
