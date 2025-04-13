@@ -35,10 +35,10 @@ def main():
 
 
             response = wav_to_text(wav_path)
-
+            print(generate(response))
             return jsonify({
                 'message': 'Audio uploaded and saved successfully!',
-                'llm_output': generate(response)
+                # 'llm_output': generate(response)
             }), 200
 
     except Exception as e:

@@ -493,13 +493,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    console.log(response.llm_output);
+                    // console.log(response.json());
                     return response.json(); // Or response.text() depending on backend
                 })
                 .then(data => {
                     console.log('Backend response:', data);
                     // TODO: Handle successful backend response
                     // e.g., Update file tree, hide overlay, etc.
+                    // console.log(data.llm_output);
                     generatingOverlay.classList.add('hidden');
                     // populateFileTree(data.updatedFiles); // Assuming backend sends updated file list
                 })
