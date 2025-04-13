@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 isRecording = false; // Update state *before* processing
 
                 // --- Combine chunks into a single Blob ---
-                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/wav' }); // Adjust type if needed
+                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/wav' });
 
                 // --- TODO: Send the audioBlob to your backend ---
                 console.log("Final audio blob created:", audioBlob);
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const generatingOverlay = document.getElementById('generating-overlay');
                 generatingOverlay.classList.remove('hidden');
 
-                fetch('/your-backend-endpoint-to-process-audio', {
+                fetch('/process_audio', {
                     method: 'POST',
                     body: formData
                 })
