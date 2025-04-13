@@ -1,0 +1,296 @@
+/* Basic Reset & Dark Mode Defaults */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg-color: #1e1e1e;
+    --text-color: #d4d4d4;
+    --sidebar-bg: #252526;
+    --editor-bg: #1e1e1e;
+    --border-color: #333333;
+    --button-bg: #3a3a3d;
+    --button-hover-bg: #4a4a4d;
+    --button-text-color: #ffffff;
+    --accent-color: #0e639c; /* Used for highlight/focus maybe */
+    --record-button-bg: #5a5a5a; /* Initial greyed out */
+    --record-button-active-bg: #c74646; /* Reddish when ready/recording */
+    --record-button-hover-bg: #dc5c5c;
+    --disabled-text-color: #888888;
+    --link-color: #3794ff;
+    --spinner-color: #d4d4d4;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+                 Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow: hidden; /* Prevent body scroll */
+}
+
+/* Screen Management */
+.screen {
+    display: none; /* Hide screens by default */
+    height: 100vh;
+    width: 100%;
+    flex-direction: column; /* Default flex direction */
+}
+.screen.active {
+    display: flex; /* Show the active screen */
+}
+
+/* Home Screen Styling */
+#home-screen {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#home-screen h1 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+#home-screen p {
+    margin-bottom: 1.5rem;
+    color: var(--disabled-text-color);
+}
+
+/* General Button Styling */
+button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--button-bg);
+    color: var(--button-text-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: inline-flex; /* Align icon and text */
+    align-items: center;
+    gap: 8px; /* Space between icon and text */
+}
+
+button:hover {
+    background-color: var(--button-hover-bg);
+}
+
+button:disabled {
+    background-color: var(--record-button-bg); /* Same as initial record */
+    color: var(--disabled-text-color);
+    cursor: not-allowed;
+}
+
+button .icon {
+    display: inline-block;
+    line-height: 1; /* Better icon alignment */
+}
+
+
+/* IDE Container Layout */
+.ide-container {
+    display: flex;
+    height: calc(100vh - 50px); /* Full height minus bottom bar */
+    flex-grow: 1; /* Take available vertical space */
+}
+
+/* Sidebar (Folder View) */
+#sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 15px;
+    overflow-y: auto; /* Scroll if content overflows */
+    display: flex;
+    flex-direction: column;
+}
+
+#sidebar h3 {
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+#folder-name-display {
+    font-size: 0.9em;
+    color: var(--disabled-text-color);
+    margin-bottom: 15px;
+    word-wrap: break-word; /* Wrap long folder names */
+}
+
+#file-tree {
+    list-style: none;
+    padding-left: 0; /* Remove default padding */
+    flex-grow: 1; /* Take remaining space */
+}
+
+#file-tree li {
+    padding: 5px 0 5px 10px; /* Indent items */
+    cursor: pointer;
+    border-radius: 3px;
+    white-space: nowrap; /* Prevent wrapping */
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Add ... for overflow */
+    position: relative;
+}
+
+#file-tree li:hover {
+    background-color: var(--button-bg);
+}
+
+#file-tree li.active-file { /* Style for the currently open file */
+    background-color: var(--accent-color);
+    color: var(--button-text-color);
+}
+
+#file-tree li.sub-item {
+    padding-left: 25px; /* Deeper indent for sub-items */
+}
+
+
+/* Main Content Area */
+#main-content {
+    flex-grow: 1; /* Take remaining horizontal space */
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    position: relative; /* Needed for overlay positioning */
+    background-color: var(--editor-bg);
+}
+
+/* Center Flex Utility */
+.center-flex {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%; /* Fill parent */
+    text-align: center;
+}
+
+/* Record Button Area */
+#record-area {
+    flex-grow: 1; /* Take available space initially */
+}
+
+#record-button {
+    font-size: 1.5rem;
+    padding: 20px 30px;
+    border-radius: 8px;
+    background-color: var(--record-button-bg); /* Greyed out initially */
+    color: var(--disabled-text-color);
+}
+
+#record-button:not(:disabled) {
+    background-color: var(--record-button-active-bg); /* Active color */
+    color: var(--button-text-color);
+}
+#record-button:not(:disabled):hover {
+    background-color: var(--record-button-hover-bg);
+}
+
+#record-hint {
+    margin-top: 1rem;
+    color: var(--disabled-text-color);
+    font-size: 0.9em;
+}
+/* Hide hint when button is enabled */
+#record-button:not(:disabled) + #record-hint {
+    display: none;
+}
+
+
+/* Editor Area */
+#editor-area {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Take available space */
+    height: 100%; /* Ensure it tries to fill */
+}
+
+#current-file-display {
+    padding: 8px 15px;
+    background-color: var(--sidebar-bg); /* Match sidebar header */
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9em;
+    color: var(--disabled-text-color);
+}
+
+#file-editor {
+    flex-grow: 1; /* Take remaining vertical space */
+    background-color: var(--editor-bg);
+    color: var(--text-color);
+    border: none;
+    padding: 15px;
+    font-family: "Courier New", Courier, monospace; /* Monospaced font */
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: none; /* Disable manual resizing */
+    outline: none; /* Remove focus outline */
+    height: calc(100% - 35px); /* Adjust based on #current-file-display height */
+    width: 100%;
+}
+
+/* Generating Overlay */
+#generating-overlay {
+    position: absolute; /* Cover the main content area */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(30, 30, 30, 0.85); /* Semi-transparent dark overlay */
+    display: flex; /* Use flex to center content */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10; /* Ensure it's on top */
+}
+
+.spinner {
+    border: 4px solid rgba(212, 212, 212, 0.3); /* Light grey border */
+    border-radius: 50%;
+    border-top: 4px solid var(--spinner-color); /* Spinner color */
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#generating-overlay p {
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+
+/* Bottom Bar */
+#bottom-bar {
+    height: 50px; /* Fixed height */
+    background-color: var(--sidebar-bg); /* Match sidebar */
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center; /* Vertically center buttons */
+    justify-content: flex-end; /* Align buttons to the right */
+    padding: 0 15px;
+    gap: 10px; /* Space between buttons */
+    width: 100%; /* Full width */
+}
+
+#record-again-button {
+    background-color: var(--record-button-active-bg);
+}
+#record-again-button:hover {
+    background-color: var(--record-button-hover-bg);
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important; /* Force hide */
+}

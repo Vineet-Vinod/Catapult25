@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple IDE</title>
+    <link rel="stylesheet" href="../static/styles.css">
+</head>
+<body>
+
+    <!-- Initial Home Screen -->
+    <div id="home-screen" class="screen active">
+        <h1>Welcome</h1>
+        <p>Select a project folder to get started.</p>
+        <!-- This button will trigger the hidden file input -->
+        <button id="open-folder-button">Open Folder</button>
+        <!-- Hidden input to select directory -->
+        <input type="file" id="folder-input" webkitdirectory directory multiple style="display: none;">
+    </div>
+
+    <!-- Main IDE View (Hidden Initially) -->
+    <div id="main-ide-view" class="screen">
+        <div class="ide-container">
+            <!-- Left Sidebar: Folder View -->
+            <div id="sidebar">
+                <h3>Folder View</h3>
+                <div id="folder-name-display">No folder selected</div>
+                <ul id="file-tree">
+                    <!-- File/folder list will be populated here by JS -->
+                    <!-- Example: -->
+                    <!-- <li>📄 index.html</li> -->
+                    <!-- <li>📁 css</li> -->
+                    <!-- <li class="sub-item">📄 style.css</li> -->
+                </ul>
+            </div>
+
+            <!-- Main Content Area -->
+            <div id="main-content">
+                <!-- Initial Record Button Area (hidden after first recording) -->
+                <div id="record-area" class="center-flex">
+                    <button id="record-button" disabled>
+                        <span class="icon">⚫</span> Record Command
+                    </button>
+                    <p id="record-hint">Open a folder first to enable recording.</p>
+                </div>
+
+                <!-- File Editor Area (hidden initially) -->
+                <div id="editor-area" class="hidden">
+                     <div id="current-file-display">No file open</div>
+                     <textarea id="file-editor" spellcheck="false"></textarea>
+                </div>
+
+                 <!-- Generating Overlay (Spinner/Animation) -->
+                 <div id="generating-overlay" class="hidden">
+                    <div class="spinner"></div>
+                    <p>Generating files...</p>
+                 </div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar (Controls - hidden initially) -->
+        <div id="bottom-bar" class="hidden">
+            <button id="record-again-button">
+                 <span class="icon">⚫</span> Record Another Command
+            </button>
+            <button id="run-button">
+                <span class="icon">▶️</span> Run Project
+            </button>
+        </div>
+    </div>
+
+    <!-- Link to your JavaScript file (optional for now) -->
+    <script src="../static/script.js" defer></script>
+
+</body>
+</html>
