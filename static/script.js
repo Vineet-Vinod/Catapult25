@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let openedFilesMap = new Map(); // map filePath to File object
     let currentOpenFile = null;
     let isSaving = false;
+    let rootdir = ""
 
     // --- Event Listener for Open Folder Button ---
     if (openFolderButton && folderInput) {
@@ -134,6 +135,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Handle case where only files are in the root
                     rootFolderName = ""; // Indicate root level contains files/folders directly
             }
+
+            rootdir = rootFolderName;
 
 
             let currentLevel = tree;
@@ -476,6 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const formData = new FormData();
                 formData.append('audio_file', audioBlob, 'recording.wav'); // Or .webm etc.
+                formData.append("rootdir", rootdir);
 
                 // Show the generating overlay WHILE sending and waiting for response
                 const generatingOverlay = document.getElementById('generating-overlay');
