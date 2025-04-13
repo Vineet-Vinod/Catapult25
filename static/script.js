@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const recordArea = document.getElementById('record-area'); // Added for hiding later
     const bottomBar = document.getElementById('bottom-bar');   // Added for showing later
     const saveFileButton = document.getElementById('save-file-button');
+    const IP = 'http://10.186.165.246:5000';
 
     let openedFilesMap = new Map(); // map filePath to File object
     let currentOpenFile = null;
@@ -370,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Attempting to save: ${filePathToSave}`);
 
         // --- Send data to backend ---
-        fetch('http://100.69.71.36:5000/save_file', {
+        fetch(`${IP}/save_file`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -480,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const generatingOverlay = document.getElementById('generating-overlay');
                 generatingOverlay.classList.remove('hidden');
 
-                fetch('http://100.69.71.36:5000/process_audio', {
+                fetch(`${IP}/process_audio`, {
                     method: 'POST',
                     body: formData
                 })
