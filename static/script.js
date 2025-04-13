@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Attempting to save: ${filePathToSave}`);
 
         // --- Send data to backend ---
-        fetch('/save_file', { // <<< YOUR BACKEND ENDPOINT HERE
+        fetch('http://100.69.71.36:5000/save_file', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
