@@ -46,10 +46,10 @@ def generate(input: str) -> str:
     # data = {"model": "deepseek-r1", "prompt": mapping[idx](input), "stream": False}
 
     response = requests.post(url, json=data)
-    print(response.json())
+    print(response.text)
     response = str(response.json()["response"])
     idx = response.find("</think>")
-    return response[idx+8:]
+    return response.text
 
     # genai.configure(api_key="AIzaSyCRRWsQBCnUBZ2wTxqg7w1-xoLqFft93tc")
 
