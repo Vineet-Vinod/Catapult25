@@ -220,13 +220,216 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // --- Placeholder for Recording Logic ---
+    // --- Microphone Recording Variables ---
+    let mediaRecorder; // Will hold the MediaRecorder instance
+    let audioChunks = []; // Array to store audio data chunks
+    let audioStream; // Will hold the MediaStream from the microphone
+    let isRecording = false; // Flag to track recording state
+
+    // --- Function to Start Recording ---
+    async function startRecording() {
+        if (isRecording) {
+            console.warn("Already recording.");
+            return;
+        }
+
+        // --- Check for browser support ---
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('Your browser does not support audio recording. Please use a modern browser like Chrome or Firefox.');
+            console.error('getUserMedia not supported on this browser!');
+            return; // Exit if not supported
+        }
+
+        console.log("Requesting microphone access...");
+        try {
+            // --- Request microphone access ---
+            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log("Microphone access granted.");
+            isRecording = true;
+            audioChunks = []; // Clear previous chunks
+
+            // --- Create MediaRecorder ---
+            // You might want to specify a mimeType if your backend expects a specific format
+            // e.g., { mimeType: 'audio/webm;codecs=opus' }
+            mediaRecorder = new MediaRecorder(audioStream);
+
+            // --- Event Handler: Data Available ---
+            // This event fires periodically while recording, and once more when stopped.
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                    console.log("Received audio chunk size:", event.data.size);
+                }
+            };
+
+            // --- Event Handler: Recording Stopped ---
+            mediaRecorder.onstop = () => {
+                console.log("Recording stopped.");
+                isRecording = false; // Update state *before* processing
+
+                // --- Combine chunks into a single Blob ---
+                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/wav' }); // Adjust type if needed
+
+                // --- TODO: Send the audioBlob to your backend ---
+                console.log("Final audio blob created:", audioBlob);
+                console.log("Blob size:", audioBlob.size);
+                // Example using fetch (replace with your actual backend endpoint and logic)
+
+                const formData = new FormData();
+                formData.append('audio_file', audioBlob, 'recording.wav'); // Or .webm etc.
+
+                // Show the generating overlay WHILE sending and waiting for response
+                const generatingOverlay = document.getElementById('generating-overlay');
+                generatingOverlay.classList.remove('hidden');
+
+                fetch('/your-backend-endpoint-to-process-audio', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json(); // Or response.text() depending on backend
+                })
+                .then(data => {
+                    console.log('Backend response:', data);
+                    // TODO: Handle successful backend response
+                    // e.g., Update file tree, hide overlay, etc.
+                    generatingOverlay.classList.add('hidden');
+                    // Example: populateFileTree(data.updatedFiles); // Assuming backend sends updated file list
+                })
+                .catch(error => {
+                    console.error('Error sending audio to backend:', error);
+                    alert('Error processing audio command. Please try again.');
+                    // TODO: Handle error (e.g., hide overlay, show error message)
+                    generatingOverlay.classList.add('hidden');
+                });
+
+
+                // --- Clean up ---
+                // Stop the microphone stream tracks to turn off the mic indicator
+                if (audioStream) {
+                    audioStream.getTracks().forEach(track => track.stop());
+                    console.log("Microphone stream stopped.");
+                    audioStream = null; // Release stream reference
+                }
+                mediaRecorder = null; // Release recorder reference
+            };
+
+            // --- Event Handler: Recording Error ---
+            mediaRecorder.onerror = event => {
+                console.error('MediaRecorder error:', event.error);
+                isRecording = false;
+                alert(`Recording error: ${event.error.name}. Please ensure microphone permissions are granted.`);
+                // Clean up on error too
+                if (audioStream) {
+                    audioStream.getTracks().forEach(track => track.stop());
+                    audioStream = null;
+                }
+                mediaRecorder = null;
+            };
+
+            // --- Start recording ---
+            // You can specify a timeslice (in ms) to get dataavailable events periodically
+            // mediaRecorder.start(1000); // Get data every second
+            mediaRecorder.start(); // Get all data at the end when stop() is called
+            console.log("MediaRecorder started.");
+
+        } catch (err) {
+            console.error('Error accessing microphone:', err);
+            isRecording = false; // Ensure state is correct
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                alert('Microphone permission denied. Please allow microphone access in your browser settings.');
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                alert('No microphone found. Please ensure a microphone is connected and enabled.');
+            } else {
+                alert(`Could not access microphone: ${err.name}`);
+            }
+            // Clean up if stream was partially acquired before error
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+                audioStream = null;
+            }
+        }
+    }
+
+    // --- Function to Stop Recording ---
+    function stopRecording() {
+        if (!isRecording || !mediaRecorder) {
+            console.warn("Not recording or recorder not initialized.");
+            // Even if not "recording", try to stop tracks if the stream exists
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+                console.log("Microphone stream stopped (cleanup).");
+                audioStream = null;
+            }
+            isRecording = false; // Ensure state is correct
+            return;
+        }
+
+        if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop(); // This will trigger the 'onstop' event handler we defined
+            // UI update (like button text) should ideally happen AFTER the stop logic completes
+            // or immediately if you prefer optimistic updates.
+        } else {
+            console.warn("MediaRecorder state is not 'recording':", mediaRecorder.state);
+            // If inactive, still try to clean up stream
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+                console.log("Microphone stream stopped (cleanup).");
+                audioStream = null;
+            }
+            isRecording = false;
+        }
+    }
+
+
+    let record_button_press_count = 0; // Initialize the counter
+
+    function record_logic() {
+        // Check if the count is ODD (1, 3, 5...) -> START recording
+        if (record_button_press_count % 2 !== 0) {
+            console.log("Attempting to start recording...");
+            startRecording(); // Call the function defined above
+
+            // --- Optional: Immediate UI Update (Optimistic) ---
+            // You might want to change the button text immediately here
+            recordButton.innerHTML = '<span class="icon">🛑</span> Stop Recording';
+            // Add a visual indicator class if desired
+            recordButton.classList.add('recording-active'); // You'd need to define this style in CSS
+
+        }
+        // Check if the count is EVEN (2, 4, 6...) -> STOP recording
+        else {
+            console.log("Attempting to stop recording...");
+            stopRecording(); // Call the function defined above
+
+            // --- Optional: Immediate UI Update (Optimistic) ---
+            // Change button text back. Note: The actual blob processing happens in onstop
+            recordButton.innerHTML = '<span class="icon">⚫</span> Record Command';
+            recordButton.classList.remove('recording-active');
+
+            // --- Show the generating overlay ---
+            // This should appear AFTER stopping, while waiting for the backend
+            // The actual hiding of the overlay happens AFTER the fetch call in onstop succeeds or fails.
+            const generatingOverlay = document.getElementById('generating-overlay');
+            if (generatingOverlay) { // Check if element exists
+            generatingOverlay.classList.remove('hidden');
+            } else {
+                console.error("Generating overlay element not found!");
+            }
+        }
+    }
+
     recordButton.addEventListener('click', () => {
-        if (recordButton.disabled) return;
-        console.log("Start Recording button clicked");
-        // TODO: Add backend call to START recording
-        // TODO: Optionally change button text/state (e.g., show Stop)
-        // TODO: Show generating overlay ON STOP
+        if (recordButton.disabled) return; // Don't do anything if disabled
+
+        record_button_press_count++; // Increment the counter on each click
+
+        console.log(`Record button clicked. Count: ${record_button_press_count}`);
+
+        record_logic();
     });
 
     // --- Placeholder for Bottom Bar Buttons ---
@@ -235,11 +438,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
      if(recordAgainButton) {
         recordAgainButton.addEventListener('click', () => {
-             console.log("Record Another Command clicked");
-             // TODO: Show generating overlay
-             // TODO: Make backend call to record/process command
-             // TODO: Handle backend response (update file tree if needed, hide overlay)
-         });
+            if (recordAgainButton.disabled) return; // Don't do anything if disabled
+    
+            record_button_press_count++; // Increment the counter on each click
+    
+            console.log(`Record button clicked. Count: ${record_button_press_count}`);
+    
+            record_logic();
+        });
      }
 
      if(runButton) {
