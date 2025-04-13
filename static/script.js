@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const generatingOverlay = document.getElementById('generating-overlay');
                 generatingOverlay.classList.remove('hidden');
 
-                fetch('/process_audio', {
+                fetch('http://100.69.71.36:5000/process_audio', {
                     method: 'POST',
                     body: formData
                 })
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // TODO: Handle successful backend response
                     // e.g., Update file tree, hide overlay, etc.
                     generatingOverlay.classList.add('hidden');
-                    populateFileTree(data.updatedFiles); // Assuming backend sends updated file list
+                    // populateFileTree(data.updatedFiles); // Assuming backend sends updated file list
                 })
                 .catch(error => {
                     console.error('Error sending audio to backend:', error);
